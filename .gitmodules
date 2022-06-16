@@ -1,0 +1,7 @@
+[submodule "ThirdParties/OpenCat"]
+	path = ThirdParties/OpenCat
+	url = https://github.com/PetoiCamp/OpenCat
+	branch = 2.0
+[submodule "ThirdParties/ailia-models"]
+	path = ThirdParties/ailia-models
+	url = https://github.com/axinc-ai/ailia-models
