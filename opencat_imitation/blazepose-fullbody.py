@@ -279,54 +279,6 @@ def display_result(img, landmarks, flags):
 # ======================
 # Main functions
 # ======================
-
-
-def recognize_from_image(net, det_net):
-    # input image loop
-    for image_path in args.input:
-        # prepare input data
-        logger.info(image_path)
-
-        img = src_img = load_image(image_path)
-        img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
-
-        # inference
-        logger.info('Start inference...')
-        if args.benchmark:
-            logger.info('BENCHMARK mode')
-            total_time_estimation = 0
-            for i in range(args.benchmark_count):
-                # Pose estimation
-                start = int(round(time.time() * 1000))
-                flags, landmarks = pose_estimate(net, det_net, img)
-                end = int(round(time.time() * 1000))
-                estimation_time = (end - start)
-
-                # Loggin
-                logger.info(
-                    f'\tailia processing estimation time {estimation_time} ms')
-                if i != 0:
-                    total_time_estimation = total_time_estimation + estimation_time
-
-            logger.info(
-                f'\taverage time estimation {total_time_estimation / (args.benchmark_count - 1)} ms'
-            )
-        else:
-            # inference
-            flags, landmarks = pose_estimate(net, det_net, img)
-
-        # plot result
-        src_img = cv2.cvtColor(src_img, cv2.COLOR_BGRA2BGR)
-        display_result(src_img, landmarks, flags)
-
-        # save results
-        savepath = get_savepath(args.savepath, image_path)
-        logger.info(f'saved at : {savepath}')
-        cv2.imwrite(savepath, src_img)
-
-    logger.info('Script finished successfully.')
-
-
 def recognize_from_video(net, det_net):
     capture = webcamera_utils.get_capture(args.video)
 
@@ -361,18 +313,14 @@ def recognize_from_video(net, det_net):
             if flags[i] >= args.threshold:
                 landmark = landmarks[i]
                 cat.control_cat(
-                    Model(landmark[but.BLAZEPOSE_KEYPOINT_NOSE, :3],
-                          landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_LEFT, :3],
-                          landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_RIGHT, :3],
-                          landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_LEFT, :3],
-                          landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_RIGHT, :3],
-                          landmark[but.BLAZEPOSE_KEYPOINT_WRIST_LEFT, :3],
-                          landmark[but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT, :3],
+                    Model(landmark[but.BLAZEPOSE_KEYPOINT_NOSE],
+                          landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_LEFT],
+                          landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_RIGHT],
+                          landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_LEFT],
+                          landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_RIGHT],
+                          landmark[but.BLAZEPOSE_KEYPOINT_WRIST_LEFT],
+                          landmark[but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT],
                           args.threshold))
-
-        # save results
-        if writer is not None:
-            writer.write(frame)
 
     capture.release()
     cv2.destroyAllWindows()

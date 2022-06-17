@@ -26,11 +26,22 @@ class Cat:
         """
         init connection
         """
+        # human pose records
+        # TODO: set init position for joints
+        self.angles: dict = {
+            'neck_h': 0,  # horizontal neck angle
+            'neck_v': 0,  # vertical neck angle
+            'shoulder_l': 0,  # left shoulder joint
+            'shoulder_r': 0,  # right shoulder joint
+            'elbow_l': 0,  # left elbow joint
+            'elbow_r': 0,  # right elbow joint
+        }
         self.goodPorts = {}
         ardSerial.connectPort(self.goodPorts)
         self.t = threading.Thread(target=ardSerial.keepCheckingPort,
                                   args=(self.goodPorts, ))
         self.t.start()
+        # prepare pose
         ardSerial.send(self.goodPorts, ['kcalib', 1])
         ardSerial.send(self.goodPorts,
                        ['I', [0, 0, 10, -52, 11, -52, 14, 83, 15, 83], 1])
@@ -40,6 +51,40 @@ class Cat:
     def control_cat(self, model: Model):
         """
         control opencat based on human pose
+        Input:
+          model: Model sent as message
+        """
+        # update neck angle
+        if self._check_thresh(model.thr, model.nose[3], model.left_shoulder[3],
+                              model.right_shoulder):
+            self.angles['neck_h'] = self._get_neck_angle(
+                model.nose[:3], model.left_shoulder[:3],
+                model.right_shoulder[:3])
+        # command to send
+        cmd: list = ['I', [0, self.angles['neck_h']], 0]
+        ardSerial.send(self.goodPorts, cmd)
+
+    def _check_thresh(self, thr: float, *values) -> bool:
+        """
+        check for each value in args whether val >= threshold
+        Inputs:
+          thr: threshold
+          values: list of values to compare
+        """
+        for val in values:
+            if val < thr:
+                return False
+
+        return True
+
+    def _get_neck_angle(self, nose: np.array, left_shoulder: np.array,
+                        right_shoulder: np.array) -> double:
+        """
+        Calculate neck angle
+        Inputs:
+          nose: nose position
+          left_shoulder: left shoulder position
+          right_shoulder: right shoulder position
         """
         # calculate neck angle
         shoulder_mid = (model.left_shoulder + model.right_shoulder) / 2
@@ -48,12 +93,12 @@ class Cat:
         plane_normal = np.cross(left_mid, mid_nose)
         front_dir = np.cross(plane_normal, left_mid)
         angle = self._vec_angle(front_dir, mid_nose)
-        dir = 1
+        # determine direction
+        axis = 1
         if np.inner(np.cross(mid_nose, front_dir), plane_normal) > 0:
-            dir = -1
-        # command to send
-        cmd: list = ['I', [0, angle * dir], 0]
-        ardSerial.send(self.goodPorts, cmd)
+            axis = -1
+
+        return dir * angle
 
     def _vec_angle(self, a: np.array, b: np.array) -> float:
         """
