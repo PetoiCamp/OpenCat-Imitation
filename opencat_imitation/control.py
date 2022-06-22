@@ -13,6 +13,8 @@ class Model:
     nose: np.array
     left_shoulder: np.array
     right_shoulder: np.array
+    left_hip: np.array
+    right_hip: np.array
     left_elbow: np.array
     right_elbow: np.array
     left_wrist: np.array
@@ -56,12 +58,47 @@ class Cat:
         """
         # update neck angle
         if self._check_thresh(model.thr, model.nose[3], model.left_shoulder[3],
-                              model.right_shoulder):
+                              model.right_shoulder[3]):
             self.angles['neck_h'] = self._get_neck_angle(
-                model.nose[:3], model.left_shoulder[:3],
-                model.right_shoulder[:3])
+                model.left_shoulder[:3], model.right_shoulder[:3],
+                model.nose[:3])
+
+        # update shoulder l
+        if self._check_thresh(model.thr, model.left_shoulder[3],
+                              model.left_hip[3], model.left_elbow[3]):
+            self.angles['shoulder_l'] = 90 - self._vec_angle(
+                (model.left_hip - model.left_shoulder)[:3],
+                (model.left_elbow - model.left_shoulder)[:3])
+
+        # update shoulder r
+        if self._check_thresh(model.thr, model.right_shoulder[3],
+                              model.right_hip[3], model.right_elbow[3]):
+            self.angles['shoulder_r'] = 90 - self._vec_angle(
+                (model.right_hip - model.right_shoulder)[:3],
+                (model.right_elbow - model.right_shoulder)[:3])
+
+        # update elbow l
+        if self._check_thresh(model.thr, model.left_shoulder[3],
+                              model.left_wrist[3], model.left_elbow[3]):
+            self.angles['elbow_l'] = self._vec_angle(
+                (model.left_shoulder - model.left_elbow)[:3],
+                (model.left_wrist - model.left_elbow)[:3]) - 90
+
+        # update elbow r
+        if self._check_thresh(model.thr, model.right_shoulder[3],
+                              model.right_wrist[3], model.right_elbow[3]):
+            self.angles['elbow_r'] = self._vec_angle(
+                (model.right_shoulder - model.right_elbow)[:3],
+                (model.right_wrist - model.right_elbow)[:3]) - 90
         # command to send
-        cmd: list = ['I', [0, self.angles['neck_h']], 0]
+        cmd: list = [
+            'I',
+            [
+                0, self.angles['neck_h'], 8, self.angles['shoulder_l'], 9,
+                self.angles['shoulder_r'], 12, self.angles['elbow_l'], 13,
+                self.angles['elbow_r']
+            ], 0
+        ]
         ardSerial.send(self.goodPorts, cmd)
 
     def _check_thresh(self, thr: float, *values) -> bool:
@@ -77,19 +114,17 @@ class Cat:
 
         return True
 
-    def _get_neck_angle(self, nose: np.array, left_shoulder: np.array,
-                        right_shoulder: np.array) -> double:
+    def _get_neck_angle(self, left_shoulder, right_shoulder, nose) -> float:
         """
         Calculate neck angle
-        Inputs:
-          nose: nose position
-          left_shoulder: left shoulder position
-          right_shoulder: right shoulder position
         """
-        # calculate neck angle
-        shoulder_mid = (model.left_shoulder + model.right_shoulder) / 2
-        mid_nose = model.nose - shoulder_mid
-        left_mid = shoulder_mid - model.left_shoulder
+        # get mid point of shoulder
+        shoulder_mid = (left_shoulder + right_shoulder) / 2
+        # mid -> nose
+        mid_nose = nose - shoulder_mid
+        # left shoulder -> mid
+        left_mid = shoulder_mid - left_shoulder
+        # get normal vector to plane
         plane_normal = np.cross(left_mid, mid_nose)
         front_dir = np.cross(plane_normal, left_mid)
         angle = self._vec_angle(front_dir, mid_nose)
@@ -98,7 +133,7 @@ class Cat:
         if np.inner(np.cross(mid_nose, front_dir), plane_normal) > 0:
             axis = -1
 
-        return dir * angle
+        return axis * angle
 
     def _vec_angle(self, a: np.array, b: np.array) -> float:
         """

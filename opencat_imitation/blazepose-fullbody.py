@@ -316,6 +316,8 @@ def recognize_from_video(net, det_net):
                     Model(landmark[but.BLAZEPOSE_KEYPOINT_NOSE],
                           landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_LEFT],
                           landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_RIGHT],
+                          landmark[but.BLAZEPOSE_KEYPOINT_HIP_LEFT],
+                          landmark[but.BLAZEPOSE_KEYPOINT_HIP_RIGHT],
                           landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_LEFT],
                           landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_RIGHT],
                           landmark[but.BLAZEPOSE_KEYPOINT_WRIST_LEFT],
