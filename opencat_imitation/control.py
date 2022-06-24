@@ -49,6 +49,24 @@ class Cat:
                        ['I', [0, 0, 10, -52, 11, -52, 14, 83, 15, 83], 1])
         ardSerial.send(self.goodPorts,
                        ['I', [0, 0, 10, -15, 11, -15, 14, 83, 15, 83], 1])
+        # start control loop
+        self.control_t = threading.Thread(target=self.control_loop)
+        self.mtx = threading.Lock()
+        self.control_t.start()
+
+    def control_loop(self):
+        while True:
+            with self.mtx:
+                cmd: list = [
+                    'I',
+                    [
+                        0, self.angles['neck_h'], 8, self.angles['shoulder_l'],
+                        9, self.angles['shoulder_r'], 12,
+                        self.angles['elbow_l'], 13, self.angles['elbow_r']
+                    ], 0.02
+                ]
+
+            ardSerial.send(self.goodPorts, cmd)
 
     def control_cat(self, model: Model):
         """
@@ -57,49 +75,41 @@ class Cat:
           model: Model sent as message
         """
         # update neck angle
-        if self._check_thresh(model.thr, model.nose[3], model.left_shoulder[3],
-                              model.right_shoulder[3]):
-            self.angles['neck_h'] = self._get_neck_angle(
-                model.left_shoulder[:3], model.right_shoulder[:3],
-                model.nose[:3])
+        with self.mtx:
+            if self._check_thresh(model.thr, model.nose[3],
+                                  model.left_shoulder[3],
+                                  model.right_shoulder[3]):
+                self.angles['neck_h'] = self._get_neck_angle(
+                    model.left_shoulder[:3], model.right_shoulder[:3],
+                    model.nose[:3])
 
-        # update shoulder l
-        if self._check_thresh(model.thr, model.left_shoulder[3],
-                              model.left_hip[3], model.left_elbow[3]):
-            self.angles['shoulder_l'] = 90 - self._vec_angle(
-                (model.left_hip - model.left_shoulder)[:3],
-                (model.left_elbow - model.left_shoulder)[:3])
+            # update shoulder l
+            if self._check_thresh(model.thr, model.left_shoulder[3],
+                                  model.left_hip[3], model.left_elbow[3]):
+                self.angles['shoulder_l'] = 90 - self._vec_angle(
+                    (model.left_hip - model.left_shoulder)[:3],
+                    (model.left_elbow - model.left_shoulder)[:3])
 
-        # update shoulder r
-        if self._check_thresh(model.thr, model.right_shoulder[3],
-                              model.right_hip[3], model.right_elbow[3]):
-            self.angles['shoulder_r'] = 90 - self._vec_angle(
-                (model.right_hip - model.right_shoulder)[:3],
-                (model.right_elbow - model.right_shoulder)[:3])
+            # update shoulder r
+            if self._check_thresh(model.thr, model.right_shoulder[3],
+                                  model.right_hip[3], model.right_elbow[3]):
+                self.angles['shoulder_r'] = 90 - self._vec_angle(
+                    (model.right_hip - model.right_shoulder)[:3],
+                    (model.right_elbow - model.right_shoulder)[:3])
 
-        # update elbow l
-        if self._check_thresh(model.thr, model.left_shoulder[3],
-                              model.left_wrist[3], model.left_elbow[3]):
-            self.angles['elbow_l'] = self._vec_angle(
-                (model.left_shoulder - model.left_elbow)[:3],
-                (model.left_wrist - model.left_elbow)[:3]) - 90
+            # update elbow l
+            if self._check_thresh(model.thr, model.left_shoulder[3],
+                                  model.left_wrist[3], model.left_elbow[3]):
+                self.angles['elbow_l'] = self._vec_angle(
+                    (model.left_shoulder - model.left_elbow)[:3],
+                    (model.left_wrist - model.left_elbow)[:3]) - 90
 
-        # update elbow r
-        if self._check_thresh(model.thr, model.right_shoulder[3],
-                              model.right_wrist[3], model.right_elbow[3]):
-            self.angles['elbow_r'] = self._vec_angle(
-                (model.right_shoulder - model.right_elbow)[:3],
-                (model.right_wrist - model.right_elbow)[:3]) - 90
-        # command to send
-        cmd: list = [
-            'I',
-            [
-                0, self.angles['neck_h'], 8, self.angles['shoulder_l'], 9,
-                self.angles['shoulder_r'], 12, self.angles['elbow_l'], 13,
-                self.angles['elbow_r']
-            ], 0
-        ]
-        ardSerial.send(self.goodPorts, cmd)
+            # update elbow r
+            if self._check_thresh(model.thr, model.right_shoulder[3],
+                                  model.right_wrist[3], model.right_elbow[3]):
+                self.angles['elbow_r'] = self._vec_angle(
+                    (model.right_shoulder - model.right_elbow)[:3],
+                    (model.right_wrist - model.right_elbow)[:3]) - 90
 
     def _check_thresh(self, thr: float, *values) -> bool:
         """

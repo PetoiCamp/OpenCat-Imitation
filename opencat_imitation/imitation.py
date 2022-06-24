@@ -14,6 +14,7 @@ from util.utils import get_base_parser, update_parser, get_savepath  # noqa: E40
 from util.model_utils import check_and_download_models  # noqa: E402
 from util.detector_utils import load_image  # noqa: E402C
 import webcamera_utils  # noqa: E402
+import threading
 
 # logger
 from logging import getLogger  # noqa: E402
@@ -283,12 +284,7 @@ def recognize_from_video(net, det_net):
     capture = webcamera_utils.get_capture(args.video)
 
     # create video writer if savepath is specified as video format
-    if args.savepath != SAVE_IMAGE_PATH:
-        f_h = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        f_w = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-        writer = webcamera_utils.get_writer(args.savepath, f_h, f_w)
-    else:
-        writer = None
+    writer = None
 
     cat: Cat = Cat()
     frame_shown = False
