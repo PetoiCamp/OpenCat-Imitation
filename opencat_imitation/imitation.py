@@ -20,6 +20,7 @@ import threading
 from logging import getLogger  # noqa: E402
 
 logger = getLogger(__name__)
+previousModel = Model([0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],0)
 
 # ======================
 # Parameters
@@ -167,7 +168,7 @@ def circle(input_img, landmarks, flags):
     threshold = args.threshold
 
     for i in range(len(flags)):
-        for point1 in range(11, 33):
+        for point1 in range(15, 17):
             landmark, flag = landmarks[i], flags[i]
             conf1 = landmark[point1, 3]
 
@@ -179,7 +180,7 @@ def circle(input_img, landmarks, flags):
 
                 line_width = landmark[point1, 2]
                 line_width = base_line_width - line_width / 2 * 100
-                line_width = max(int(line_width), 1)
+                line_width = min(max(int(line_width), 1),20)
 
                 x1 = int(landmark[point1, 0])
                 y1 = int(landmark[point1, 1])
@@ -226,23 +227,23 @@ def display_result(img, landmarks, flags):
     line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_ELBOW_RIGHT,
          but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT)
 
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_LEFT,
-         but.BLAZEPOSE_KEYPOINT_PINKY_LEFT_KNUCKLE1)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_PINKY_LEFT_KNUCKLE1,
-         but.BLAZEPOSE_KEYPOINT_INDEX_LEFT_KNUCKLE1)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_LEFT,
-         but.BLAZEPOSE_KEYPOINT_INDEX_LEFT_KNUCKLE1)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_LEFT,
-         but.BLAZEPOSE_KEYPOINT_THUMB_LEFT_KNUCKLE2)
-
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT,
-         but.BLAZEPOSE_KEYPOINT_PINKY_RIGHT_KNUCKLE1)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_PINKY_RIGHT_KNUCKLE1,
-         but.BLAZEPOSE_KEYPOINT_INDEX_RIGHT_KNUCKLE1)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT,
-         but.BLAZEPOSE_KEYPOINT_INDEX_RIGHT_KNUCKLE1)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT,
-         but.BLAZEPOSE_KEYPOINT_THUMB_RIGHT_KNUCKLE2)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_LEFT,
+#         but.BLAZEPOSE_KEYPOINT_PINKY_LEFT_KNUCKLE1)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_PINKY_LEFT_KNUCKLE1,
+#         but.BLAZEPOSE_KEYPOINT_INDEX_LEFT_KNUCKLE1)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_LEFT,
+#         but.BLAZEPOSE_KEYPOINT_INDEX_LEFT_KNUCKLE1)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_LEFT,
+#         but.BLAZEPOSE_KEYPOINT_THUMB_LEFT_KNUCKLE2)
+#
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT,
+#         but.BLAZEPOSE_KEYPOINT_PINKY_RIGHT_KNUCKLE1)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_PINKY_RIGHT_KNUCKLE1,
+#         but.BLAZEPOSE_KEYPOINT_INDEX_RIGHT_KNUCKLE1)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT,
+#         but.BLAZEPOSE_KEYPOINT_INDEX_RIGHT_KNUCKLE1)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT,
+#         but.BLAZEPOSE_KEYPOINT_THUMB_RIGHT_KNUCKLE2)
 
     line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_SHOULDER_LEFT,
          but.BLAZEPOSE_KEYPOINT_HIP_LEFT)
@@ -253,43 +254,107 @@ def display_result(img, landmarks, flags):
 
     # Upper body: stop here
 
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_HIP_LEFT,
-         but.BLAZEPOSE_KEYPOINT_KNEE_LEFT)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_KNEE_LEFT,
-         but.BLAZEPOSE_KEYPOINT_ANKLE_LEFT)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_HIP_RIGHT,
-         but.BLAZEPOSE_KEYPOINT_KNEE_RIGHT)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_KNEE_RIGHT,
-         but.BLAZEPOSE_KEYPOINT_ANKLE_RIGHT)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_HIP_LEFT,
+#         but.BLAZEPOSE_KEYPOINT_KNEE_LEFT)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_KNEE_LEFT,
+#         but.BLAZEPOSE_KEYPOINT_ANKLE_LEFT)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_HIP_RIGHT,
+#         but.BLAZEPOSE_KEYPOINT_KNEE_RIGHT)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_KNEE_RIGHT,
+#         but.BLAZEPOSE_KEYPOINT_ANKLE_RIGHT)
+#
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_ANKLE_LEFT,
+#         but.BLAZEPOSE_KEYPOINT_HEEL_LEFT)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_HEEL_LEFT,
+#         but.BLAZEPOSE_KEYPOINT_FOOT_LEFT_INDEX)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_ANKLE_LEFT,
+#         but.BLAZEPOSE_KEYPOINT_FOOT_LEFT_INDEX)
+#
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_ANKLE_RIGHT,
+#         but.BLAZEPOSE_KEYPOINT_HEEL_RIGHT)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_HEEL_RIGHT,
+#         but.BLAZEPOSE_KEYPOINT_FOOT_RIGHT_INDEX)
+#    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_ANKLE_RIGHT,
+#         but.BLAZEPOSE_KEYPOINT_FOOT_RIGHT_INDEX)
 
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_ANKLE_LEFT,
-         but.BLAZEPOSE_KEYPOINT_HEEL_LEFT)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_HEEL_LEFT,
-         but.BLAZEPOSE_KEYPOINT_FOOT_LEFT_INDEX)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_ANKLE_LEFT,
-         but.BLAZEPOSE_KEYPOINT_FOOT_LEFT_INDEX)
+''' https://stackoverflow.com/questions/58293187/opencv-real-time-streaming-video-capture-is-slow-how-to-drop-frames-or-get-sync
+'''
+class ThreadedCamera():
+    def __init__(self, source = 0):
+        self.capture = webcamera_utils.get_capture(args.video)
+        self.thread = threading.Thread(target = self.update, args = ())
+#        self.thread.daemon = True
+        self.thread.start()
+        self.status = False
+        self.frame  = None
+        
+    def update(self):
+        while True:
+            if self.capture.isOpened():
+                (self.status, self.frame) = self.capture.read()
 
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_ANKLE_RIGHT,
-         but.BLAZEPOSE_KEYPOINT_HEEL_RIGHT)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_HEEL_RIGHT,
-         but.BLAZEPOSE_KEYPOINT_FOOT_RIGHT_INDEX)
-    line(img, landmarks, flags, but.BLAZEPOSE_KEYPOINT_ANKLE_RIGHT,
-         but.BLAZEPOSE_KEYPOINT_FOOT_RIGHT_INDEX)
+    def grab_frame(self):
+        if self.status:
+            return (self.status, self.frame)
+        return None
+        
+frame_rgb = []
+class ThreadedPosture():
+    def __init__(self,net, det_net):
+        self.thread = threading.Thread(target = self.update, args = (net, det_net))
+        self.thread.start()
+        self.flags = []
+        self.landmarks = []
+    def update(self,net, det_net):
+        global frame_rgb
+        while True:
+#            print (frame_rgb)
+            if frame_rgb !=[]:
+                self.flags, self.landmarks = pose_estimate(net, det_net, frame_rgb)
+    def get_pose(self):
+        if self.flags !=[]:
+            return (self.flags, self.landmarks)
+        else:
+            return([],[])
 
-
+frame_shown = False
+def plotResult(frame,landmarks,flags):
+    display_result(frame, landmarks, flags)
+    cv2.imshow('frame', frame)
+    frame_shown = True
+    
 # ======================
 # Main functions
 # ======================
 def recognize_from_video(net, det_net):
-    capture = webcamera_utils.get_capture(args.video)
-
+#    capture = webcamera_utils.get_capture(args.video)
+    streamer = ThreadedCamera()
     # create video writer if savepath is specified as video format
     writer = None
 
     cat: Cat = Cat()
-    frame_shown = False
+
+    counter =0
+    poseStarted =False
+#    global frame_rgb
+
     while (True):
-        ret, frame = capture.read()
+        timer = []
+        timer.append(time.perf_counter())
+        ret, rawframe = streamer.grab_frame()#capture.read()
+        timer.append(time.perf_counter())
+        
+        # resize image
+        scale_percent = 0.25 # percent of original size
+        width = int(rawframe.shape[1] * scale_percent )
+        height = int(rawframe.shape[0] * scale_percent )
+        dim = (width, height)
+        frame = cv2.resize(rawframe, dim, interpolation = cv2.INTER_AREA)
+        timer.append(time.perf_counter())
+
+        frame = cv2.flip(frame,1) # flip left and right. mirror.
+        timer.append(time.perf_counter())
+        
         if (cv2.waitKey(1) & 0xFF == ord('q')) or not ret:
             break
         if frame_shown and cv2.getWindowProperty('frame',
@@ -298,27 +363,54 @@ def recognize_from_video(net, det_net):
 
         # inference
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        timer.append(time.perf_counter())
         flags, landmarks = pose_estimate(net, det_net, frame_rgb)
+#            if not poseStarted:
+#                poseCalculator = ThreadedPosture(net, det_net)
+#                poseStarted = True
+#                time.sleep(1)
+#            if poseStarted:
+#                flags, landmarks = poseCalculator.get_pose()
 
-        # plot result
-        display_result(frame, landmarks, flags)
-        cv2.imshow('frame', frame)
-        frame_shown = True
-
-        for i in range(len(flags)):
+            # plot result
+#        if flags !=[]:
+        timer.append(time.perf_counter())
+        for i in range(min(len(flags),1)):# only calulate the first person
             if flags[i] >= args.threshold:
                 landmark = landmarks[i]
-                cat.control_cat(
-                    Model(landmark[but.BLAZEPOSE_KEYPOINT_NOSE],
-                          landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_LEFT],
-                          landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_RIGHT],
-                          landmark[but.BLAZEPOSE_KEYPOINT_HIP_LEFT],
-                          landmark[but.BLAZEPOSE_KEYPOINT_HIP_RIGHT],
-                          landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_LEFT],
-                          landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_RIGHT],
-                          landmark[but.BLAZEPOSE_KEYPOINT_WRIST_LEFT],
-                          landmark[but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT],
-                          args.threshold))
+#                counter =(counter+1)%2
+#                if counter!=0:#skip frames
+#                    continue
+#                else:
+#                print(threading.active_count())
+                if threading.active_count() ==4:
+                    controlThread = threading.Thread(target = cat.control_cat, args =(Model(landmark[but.BLAZEPOSE_KEYPOINT_NOSE],
+                              landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_LEFT],
+                              landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_RIGHT],
+                              landmark[but.BLAZEPOSE_KEYPOINT_HIP_LEFT],
+                              landmark[but.BLAZEPOSE_KEYPOINT_HIP_RIGHT],
+                              landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_LEFT],
+                              landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_RIGHT],
+                              landmark[but.BLAZEPOSE_KEYPOINT_WRIST_LEFT],
+                              landmark[but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT],
+                              args.threshold),))
+                    controlThread.start()
+    #                cat.control_cat(
+    #                    Model(landmark[but.BLAZEPOSE_KEYPOINT_NOSE],
+    #                          landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_LEFT],
+    #                          landmark[but.BLAZEPOSE_KEYPOINT_SHOULDER_RIGHT],
+    #                          landmark[but.BLAZEPOSE_KEYPOINT_HIP_LEFT],
+    #                          landmark[but.BLAZEPOSE_KEYPOINT_HIP_RIGHT],
+    #                          landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_LEFT],
+    #                          landmark[but.BLAZEPOSE_KEYPOINT_ELBOW_RIGHT],
+    #                          landmark[but.BLAZEPOSE_KEYPOINT_WRIST_LEFT],
+    #                          landmark[but.BLAZEPOSE_KEYPOINT_WRIST_RIGHT],
+    #                          args.threshold))
+    #                print(threading.active_count())
+                    timer.append(time.perf_counter())
+        plotResult(frame,landmarks,flags) # Cannot use a thread to plot: WARNING: NSWindow drag regions should only be invalidated on the Main Thread! This will throw an exception in the future.
+        timer.append(time.perf_counter())
+#        print(timer)
 
     capture.release()
     cv2.destroyAllWindows()
