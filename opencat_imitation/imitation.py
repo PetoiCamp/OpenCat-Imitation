@@ -341,18 +341,18 @@ def recognize_from_video(net, det_net):
     while (True):
         timer = []
         timer.append(time.perf_counter())
-        ret, rawframe = streamer.grab_frame()#capture.read()
+        ret, frame = streamer.grab_frame()#capture.read()
         timer.append(time.perf_counter())
         
         # resize image
-        scale_percent = 0.25 # percent of original size
-        width = int(rawframe.shape[1] * scale_percent )
-        height = int(rawframe.shape[0] * scale_percent )
-        dim = (width, height)
-        frame = cv2.resize(rawframe, dim, interpolation = cv2.INTER_AREA)
-        timer.append(time.perf_counter())
+#        scale_percent = 0.5 # percent of original size
+#        width = int(rawframe.shape[1] * scale_percent )
+#        height = int(rawframe.shape[0] * scale_percent )
+#        dim = (width, height)
+#        frame = cv2.resize(rawframe, dim, interpolation = cv2.INTER_AREA)
+#        timer.append(time.perf_counter())
 
-        frame = cv2.flip(frame,1) # flip left and right. mirror.
+        frame = cv2.flip(frame,1) # flip left and right of the raw video. 
         timer.append(time.perf_counter())
         
         if (cv2.waitKey(1) & 0xFF == ord('q')) or not ret:

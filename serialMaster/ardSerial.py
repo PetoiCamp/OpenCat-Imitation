@@ -469,7 +469,7 @@ def testPort(goodPorts, serialObject, p):
             waitTime = 2
         result = sendTask(goodPorts, serialObject, ['b', [20, 50], 0], waitTime)
         print(result)
-        if result != -1 or "Petoi" in p:
+        if result != -1:# or "Petoi" in p:
             printH('Adding', p)
             goodPorts.update({serialObject: p})
             goodPortCount += 1

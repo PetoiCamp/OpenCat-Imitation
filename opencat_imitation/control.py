@@ -6,7 +6,7 @@ import threading
 import time
 
 sendCmd = True
-mirror = False
+mirror = False # flip the left-right mapping on the robot
 E_RGB_ALL = 0
 E_RGB_RIGHT = 1
 E_RGB_LEFT = 2
@@ -14,7 +14,6 @@ E_EFFECT_BREATHING = 0
 E_EFFECT_ROTATE = 1
 E_EFFECT_FLASH = 2
 E_EFFECT_NONE = 3
-
 
 angleGoal = [0,0,0,0,0,0,]
 #self.angles['neck_h'],self.angles['neck_v'], self.angles['shoulder_l'], self.angles['shoulder_r'],self.angles['elbow_l'],self.angles['elbow_r']]
@@ -44,6 +43,7 @@ class Cat:
         """
         # human pose records
         # TODO: set init position for joints
+        self.prev_angles:angleList = np.array([0,0,0,0,0,0,0])
         self.angles: dict = {
             'neck_h': 0,  # horizontal neck angle
             'neck_v': 0,  # vertical neck angle
@@ -51,17 +51,31 @@ class Cat:
             'shoulder_r': 0,  # right shoulder joint
             'elbow_l': 0,  # left elbow joint
             'elbow_r': 0,  # right elbow joint
+            'spine':0
         }
-        #        model = input('What is your model? (Nybble/Bittle)\n')
+        self.updated = False
+        self.model = input('What is your model? (Nybble/Bittle)\n')
         # prepare pose for Nybble
-#        if model =='Nybble':
-        prepare = [
-            -4,   0,   0,   1,
-            0,   0,   0,
-            0,   0,   0,   0,   0,   0,   0,   0,  30,  30, -30, -30,  30,  30, -30, -30,   8,   0,   0,   0,
-            10, -20,  75,   0,  -5,  -5,  20,  20,  30,  30, -90, -90,  60,  60,  -35,  -35,   8,   0,   0,   0,
-            10, -20,  80,   0,  -5,  -5,  20,  20,  42,  42, -90, -90,  78,  78,  -35,  -35,   8,   0,   0,   0,
-            0, -54,  80,   0,  -5,  -5,  20,  20, -34, -47, -60, -60,  47,  78,  -35,  -35,   8,   0,   0,   0,
+        if self.model =='Nybble':
+            prepare = [
+                -5,   0,   0,   1,
+                 0,   0,   0,
+               -30, -80, -45,   0,  -3,  -3,   3,   3,  60,  60, -60, -60, -45, -45,  45,  45,   8,   0,   0,   0,
+                 0,   0,   0,   0,   0,   0,   0,   0,  30,  30, -30, -30,  30,  30, -30, -30,   8,   0,   0,   0,
+                10, -20,  75,   0,  -5,  -5,  20,  20,  30,  30, -90, -90,  60,  60,  -35,  -35,   8,   0,   0,   0,
+                10, -20,  80,   0,  -5,  -5,  20,  20,  42,  42, -90, -90,  78,  78,  -35,  -35,   8,   0,   0,   0,
+                 0, -54,  100,   0,  -5,  -5,  20,  20, -47, -47, -65, -65,  47,  78,  -30,  -30,   8,   0,   0,   0,
+                ]
+        # prepare pose for Bittle
+        elif self.model =='Bittle':
+            prepare = [
+              -5,   0,   0,   1,
+               0,   0,   0,
+             -30, -80, -45,   0,  -3,  -3,   3,   3,  70,  70,  70,  70, -55, -55, -55, -55,   8,   0,   0,   0,
+               0,   0,   0,   0,   0,   0,   0,   0,  30,  30,  30,  30,  30,  30,  30,  30,   8,   0,   0,   0,
+               0,   0,   0,   0,   0,   0,   0,   0,   4,   4,   9,   9,  85,  85,  41,  41,   8,   0,   0,   0,
+               0,   0,   0,   0,   0,   0,   0,   0,  31,  31, -26, -26,  86,  86,  78,  78,   4,   0,   0,   0,
+               0,   0,   0,   0,   0,   0,   0,   0, -34, -34, -25, -25,  30,  30,  85,  85,   8,   0,   0,   0,
             ]
         if sendCmd:
             self.goodPorts = {}
@@ -69,13 +83,8 @@ class Cat:
             self.t = threading.Thread(target=ardSerial.keepCheckingPort,
                                       args=(self.goodPorts, ))
             self.t.start()
-        # prepare pose for Bittle
-        # ardSerial.send(self.goodPorts, ['kcalib', 1])
-        # ardSerial.send(self.goodPorts,
-        #                ['I', [0, 0, 10, -52, 11, -52, 14, 83, 15, 83], 1])
-        # ardSerial.send(self.goodPorts,
-        #                ['I', [0, 0, 10, -15, 11, -15, 14, 83, 15, 83], 1])
-        
+
+            time.sleep(2)
             ardSerial.send(self.goodPorts,['g', 0.5])
 
             ardSerial.send(self.goodPorts,['K', prepare, 1])
@@ -84,67 +93,83 @@ class Cat:
         self.control_t = threading.Thread(target=self.control_loop)
         self.mtx = threading.Lock()
         self.control_t.start()
-        self.updated = False
+
 
     def control_loop(self):
         if sendCmd:
             ardSerial.send(self.goodPorts, ['C',[0,  0,  127, E_RGB_ALL,   E_EFFECT_FLASH],  0])
-        anglelist = []
+        
         colorState = 0;
         while True:
             timer = []
-            
-            with self.mtx:
-                timer.append(time.perf_counter())
-                if anglelist == list(self.angles.values()):
-                    print("same")
-                    continue
+            timer.append(time.perf_counter())
+            change = np.linalg.norm(self.prev_angles-list(self.angles.values()))
+            if self.updated and change>3:
+#                print(change)
+#                print(self.prev_angles,end = ',\t')
+#                print(list(self.angles.values()))
+#                print(self.prev_angles-np.array(list(self.angles.values())))
     #                print('**',end = '')
     #                print(anglelist,end = '\n**')
     #                print(list(self.angles.values()))
-                if mirror:
+                hp,ht,sFL,sFR,sBR, sBL, kFL, kFR, kBR, kBL = 0,1,8,9,10,11,12,13,14,15
+
+                if self.model == 'Nybble':
                     cmd: list = [
                     'I',
                         [
-                        0, -self.angles['neck_h'], 1, self.angles['neck_v'], 9, self.angles['shoulder_l'],
-                        8, self.angles['shoulder_r'], 13,
-                        self.angles['elbow_l'], 12, self.angles['elbow_r']
+                        hp, self.angles['neck_h'], ht, self.angles['neck_v'],
+                        sFL, self.angles['shoulder_l'],sFR, self.angles['shoulder_r'],
+                        kFL,self.angles['elbow_l'], kFR, self.angles['elbow_r'],
+                        sBL,-65 - self.angles['spine'],sBR, -65 + self.angles['spine'],
+                        kBL, -30 + self.angles['spine']/2,kBR,-30 - self.angles['spine']/2,
                         ], 0
                     ]
-                else:
+                elif self.model == 'Bittle':
                     cmd: list = [
                     'I',
                         [
-                        0, self.angles['neck_h'], 1, self.angles['neck_v'], 8, self.angles['shoulder_l'],
-                        9, self.angles['shoulder_r'], 12,
-                        self.angles['elbow_l'], 13, self.angles['elbow_r']
+                        hp, self.angles['neck_h'], ht, self.angles['neck_v'],
+                        sFL, self.angles['shoulder_l'], sFR, self.angles['shoulder_r'],
+                        kFL, self.angles['elbow_l'], kFR, self.angles['elbow_r'],
+                        sBL,-34 - self.angles['spine'],sBR, -34+ self.angles['spine'],
+                        kBL, 85 + self.angles['spine']/3,kBR, 85 - self.angles['spine']/3,
                         ], 0
                     ]
                 #                print(list(self.angles.values()))
+                if mirror:
+                    cmd[1][1]=-cmd[1][1]
+                    for i in range(1,len(cmd[1])//4):
+                        temp = cmd[1][i*4]
+                        cmd[1][i*4]=cmd[1][i*4+2]
+                        cmd[1][i*4+2]=temp
                 
                 if sendCmd:
                     timer.append(time.perf_counter())
                     if self.angles['neck_v']>-15:
                         if colorState !=1:
-                            ardSerial.send(self.goodPorts, ['C',[127,  0,  0, E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
+                            ardSerial.send(self.goodPorts, ['C',[64, 0, 127, E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
                             colorState = 1
-                    elif self.angles['neck_v']<-60:
+                    elif self.angles['neck_v']<-55:
                         if colorState !=2:
-                            ardSerial.send(self.goodPorts, ['C',[0, 127,  127, E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
+                            ardSerial.send(self.goodPorts, ['C',[0, 127, 127, E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
                             colorState = 2
                     else:
                         if colorState !=3:
-                            ardSerial.send(self.goodPorts, ['C',[0, 127,  0,  E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
+                            ardSerial.send(self.goodPorts, ['C',[64, 127, 0,   E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
                             colorState = 3
                     timer.append(time.perf_counter())
                     
                     ardSerial.send(self.goodPorts, cmd)
                     timer.append(time.perf_counter())
+                self.prev_angles = np.array(list(self.angles.values()))
+                self.updated = False
                     
 #                    print(timer)
-                    
-                anglelist = list(self.angles.values())
-
+                
+    
+    
+    
     def control_cat(self, model: Model):
         """
         control opencat based on human pose
@@ -152,51 +177,75 @@ class Cat:
           model: Model sent as message
         """
         # update neck angle
-        with self.mtx:
 #            timer = []
 #            timer.append(time.perf_counter())
-            if self._check_thresh(model.thr, model.nose[3],
-                                  model.left_shoulder[3],
-                                  model.right_shoulder[3]):
-                neck_angles = self._get_neck_angle(
-                    model.left_shoulder[:3], model.right_shoulder[:3],
-                    model.nose[:3])
+        smallAngleThreshold = 2 # filter out shakes in the algorithm
+        if self._check_thresh(model.thr, model.nose[3],
+                              model.left_shoulder[3],
+                              model.right_shoulder[3]):
+            neck_angles = self._get_neck_angle(
+                model.left_shoulder[:3], model.right_shoulder[:3],
+                model.nose[:3])
+            if abs(neck_angles[0]-self.angles['neck_h'])>smallAngleThreshold:
                 self.angles['neck_h'] = neck_angles[0]
-                self.angles['neck_v'] = neck_angles[1]-75
+            if abs(neck_angles[0]-self.angles['neck_v'])>smallAngleThreshold:
+                self.angles['neck_v'] = neck_angles[1]
 #            timer.append(time.perf_counter())
 
-            # update shoulder l
-            if self._check_thresh(model.thr, model.left_shoulder[3],
-                                  model.left_hip[3], model.left_elbow[3]):
-                self.angles['shoulder_l'] = 90 - self._vec_angle(
-                    (model.left_hip - model.left_shoulder)[:3],
-                    (model.left_elbow - model.left_shoulder)[:3]) - 30
+        # update shoulder l
+        if self._check_thresh(model.thr, model.left_shoulder[3],
+                              model.left_hip[3], model.left_elbow[3]):
+            shoulderL = 60 - self._vec_angle(
+                (model.left_hip - model.left_shoulder)[:3],
+                (model.left_elbow - model.left_shoulder)[:3])
+            if abs(shoulderL -self.angles['shoulder_l'])>smallAngleThreshold:
+                self.angles['shoulder_l'] = shoulderL
 #            timer.append(time.perf_counter())
 
-            # update shoulder r
-            if self._check_thresh(model.thr, model.right_shoulder[3],
-                                  model.right_hip[3], model.right_elbow[3]):
-                self.angles['shoulder_r'] = 90 - self._vec_angle(
-                    (model.right_hip - model.right_shoulder)[:3],
-                    (model.right_elbow - model.right_shoulder)[:3]) - 30
+        # update shoulder r
+        if self._check_thresh(model.thr, model.right_shoulder[3],
+                              model.right_hip[3], model.right_elbow[3]):
+            shoulderR = 60 - self._vec_angle(
+                (model.right_hip - model.right_shoulder)[:3],
+                (model.right_elbow - model.right_shoulder)[:3])
+            if abs(shoulderR-self.angles['shoulder_r'])>smallAngleThreshold:
+                self.angles['shoulder_r'] = shoulderR
 #            timer.append(time.perf_counter())
 
-            # update elbow l
-            if self._check_thresh(model.thr, model.left_shoulder[3],
-                                  model.left_wrist[3], model.left_elbow[3]):
-                self.angles['elbow_l'] = self._vec_angle(
-                    (model.left_shoulder - model.left_elbow)[:3],
-                    (model.left_wrist - model.left_elbow)[:3]) - 75
+        # update elbow l
+        if self._check_thresh(model.thr, model.left_shoulder[3],
+                              model.left_wrist[3], model.left_elbow[3]):
+            elbowL = self._vec_angle(
+                (model.left_shoulder - model.left_elbow)[:3],
+                (model.left_wrist - model.left_elbow)[:3]) - 75
+            if abs(elbowL - self.angles['elbow_l'])>smallAngleThreshold:
+                self.angles['elbow_l'] = elbowL
 #            timer.append(time.perf_counter())
 
-            # update elbow r
-            if self._check_thresh(model.thr, model.right_shoulder[3],
-                                  model.right_wrist[3], model.right_elbow[3]):
-                self.angles['elbow_r'] = self._vec_angle(
-                    (model.right_shoulder - model.right_elbow)[:3],
-                    (model.right_wrist - model.right_elbow)[:3]) - 75
+        # update elbow r
+        if self._check_thresh(model.thr, model.right_shoulder[3],
+                              model.right_wrist[3], model.right_elbow[3]):
+            elbowR = self._vec_angle(
+                (model.right_shoulder - model.right_elbow)[:3],
+                (model.right_wrist - model.right_elbow)[:3]) - 75
+            if abs(elbowR-self.angles['elbow_r'])>smallAngleThreshold:
+                self.angles['elbow_r'] = elbowR
+                
+        if self._check_thresh(model.thr, model.right_shoulder[3],
+                            model.left_shoulder[3], model.right_hip[3],model.left_hip[3]):
+            
+            spine = self._vec_angle(
+                (model.right_shoulder - model.left_shoulder)[:3],
+                (model.right_hip - model.left_hip)[:3])/4
+            direction = np.sign(np.linalg.norm((model.right_shoulder-model.right_hip)[:3]) - np.linalg.norm((model.left_shoulder-model.left_hip)[:3]))
+            spine *= direction
+            
+            if abs(spine-self.angles['spine'])>smallAngleThreshold:
+                self.angles['spine'] = spine
+                print(self.angles['spine'])
 #            timer.append(time.perf_counter())
 #            print(timer)
+        self.updated = True
 
     def _check_thresh(self, thr: float, *values) -> bool:
         """
@@ -238,7 +287,7 @@ class Cat:
         tilt = (np.linalg.norm(mid_nose)*np.sin(tilt_angle)-shoulderLength*2/3)/(shoulderLength/3)
         tilt = np.rad2deg(np.arctan(tilt))
 
-        return [axis * pan,tilt]
+        return [axis * pan,tilt-75]
 
     def _vec_angle(self, a: np.array, b: np.array) -> float:
         """
