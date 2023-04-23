@@ -85,7 +85,7 @@ class Cat:
             self.t.start()
 
             time.sleep(2)
-            ardSerial.send(self.goodPorts,['g', 0.5])
+            ardSerial.send(self.goodPorts,['G', 0.5])
 
             ardSerial.send(self.goodPorts,['K', prepare, 1])
 
