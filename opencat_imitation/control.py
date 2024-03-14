@@ -54,7 +54,8 @@ class Cat:
             'spine':0
         }
         self.updated = False
-        self.model = input('What is your model? (Nybble/Bittle)\n')
+        self.model = 'Nybble'
+#        self.model = input('What is your model? (Nybble/Bittle)\n')
         # prepare pose for Nybble
         if self.model =='Nybble':
             prepare = [
@@ -64,7 +65,7 @@ class Cat:
                  0,   0,   0,   0,   0,   0,   0,   0,  30,  30, -30, -30,  30,  30, -30, -30,   8,   0,   0,   0,
                 10, -20,  75,   0,  -5,  -5,  20,  20,  30,  30, -90, -90,  60,  60,  -35,  -35,   8,   0,   0,   0,
                 10, -20,  80,   0,  -5,  -5,  20,  20,  42,  42, -90, -90,  78,  78,  -35,  -35,   8,   0,   0,   0,
-                 0, -54,  100,   0,  -5,  -5,  20,  20, -47, -47, -65, -65,  47,  78,  -30,  -30,   8,   0,   0,   0,
+                 0, -54,  100,   0,  -5,  -5,  20,  20, -47, -47, -45, -45,  78,  78,  -30,  -30,   8,   0,   0,   0,
                 ]
         # prepare pose for Bittle
         elif self.model =='Bittle':
@@ -118,10 +119,10 @@ class Cat:
                     cmd: list = [
                     'I',
                         [
-                        hp, self.angles['neck_h'], ht, self.angles['neck_v'],
+                        hp, self.angles['neck_h'], ht, -45+self.angles['neck_v'],
                         sFL, self.angles['shoulder_l'],sFR, self.angles['shoulder_r'],
                         kFL,self.angles['elbow_l'], kFR, self.angles['elbow_r'],
-                        sBL,-65 - self.angles['spine'],sBR, -65 + self.angles['spine'],
+                        sBL,-45 - self.angles['spine'],sBR, -45 + self.angles['spine'],
                         kBL, -30 + self.angles['spine']/2,kBR,-30 - self.angles['spine']/2,
                         ], 0
                     ]
@@ -146,22 +147,22 @@ class Cat:
                 
                 if sendCmd:
                     timer.append(time.perf_counter())
-                    if self.angles['neck_v']>-15:
-                        if colorState !=1:
-                            ardSerial.send(self.goodPorts, ['C',[64, 0, 127, E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
-                            colorState = 1
-                    elif self.angles['neck_v']<-55:
-                        if colorState !=2:
-                            ardSerial.send(self.goodPorts, ['C',[0, 127, 127, E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
-                            colorState = 2
-                    else:
-                        if colorState !=3:
-                            ardSerial.send(self.goodPorts, ['C',[64, 127, 0,   E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
-                            colorState = 3
+#                    if self.angles['neck_v']>-15:
+#                        if colorState !=1:
+#                            ardSerial.send(self.goodPorts, ['C',[64, 0, 127, E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
+#                            colorState = 1
+#                    elif self.angles['neck_v']<-55:
+#                        if colorState !=2:
+#                            ardSerial.send(self.goodPorts, ['C',[0, 127, 127, E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
+#                            colorState = 2
+#                    else:
+#                        if colorState !=3:
+#                            ardSerial.send(self.goodPorts, ['C',[64, 127, 0,   E_RGB_ALL,   E_EFFECT_FLASH],  0.0])
+#                            colorState = 3
                     timer.append(time.perf_counter())
                     
                     ardSerial.send(self.goodPorts, cmd)
-                    timer.append(time.perf_counter())
+#                    timer.append(time.perf_counter())
                 self.prev_angles = np.array(list(self.angles.values()))
                 self.updated = False
                     
